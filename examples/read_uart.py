@@ -1,7 +1,17 @@
 import argparse
 import time
 
-from uart_link import TrackpadTypeId, UartConfig, UartLinkClient, SerialTransport
+from uart_link import (
+    SensorFrameChunkMessage,
+    UartConfig,
+    UartLinkClient,
+    SerialTransport,
+    DeviceIdMessage,
+    EffectiveActiveAreasMessage,
+    CalibrationDataMessage,
+    SamplingTimeMessage,
+    SamplingTooLongMessage,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,12 +30,22 @@ def main() -> None:
     transport = SerialTransport(config)
     client = UartLinkClient(transport)
 
-    def on_packet(packet) -> None:
-        print(f"type_id=0x{packet.type_id:02X}, payload={packet.payload.hex()}")
-        if packet.type_id == TrackpadTypeId.DEVICE_ID:
-            print("Device ID packet received")
+    def on_message(message) -> None:
+        # print(f"{type(message).__name__}: type_id=0x{message.type_id:02X}")
+        if isinstance(message, DeviceIdMessage):
+            print("device_id:", message.device_id.decode())
+        if isinstance(message, EffectiveActiveAreasMessage):
+            print("effective_active_areas:", message.active_area_count)
+        if isinstance(message, CalibrationDataMessage):
+            print("calibration_data:", message.sensor_values)
+        if isinstance(message, SensorFrameChunkMessage):
+            print("sensor_values:", message.sensor_values)
+        if isinstance(message, SamplingTimeMessage):
+            print("sampling_time_us:", message.sampling_time_us)
+        if isinstance(message, SamplingTooLongMessage):
+            print("Warring: Sampling Too Long")
 
-    client.register_packet_handler(on_packet)
+    client.register_message_handler(on_message)
     client.open()
     print(f"Listening on {args.port} @ {args.baudrate}. Press Ctrl+C to stop.")
 
@@ -35,7 +55,7 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        client.unregister_packet_handler(on_packet)
+        client.unregister_message_handler(on_message)
         client.close()
 
 
