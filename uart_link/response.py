@@ -100,7 +100,7 @@ class AdcGainResponse(TrackpadResponse):
         if len(packet.payload) != 3:
             raise ValueError("ADC gain payload must be 3 bytes")
         adc = packet.payload[0]
-        gain = int.from_bytes(packet.payload[1:2], "big")
+        gain = int.from_bytes(packet.payload[1:3], "big")
         return cls(packet=packet, adc=adc, gain=gain)
 
 
