@@ -11,7 +11,7 @@ from uart_link import (
     SamplingTimeResponse,
     GetDeviceIdRequest, GetFirmwareVersionRequest, GetInformationRequest, SetSamplingTimeRequest,
     FirmwareVersionResponse, AdcGainResponse, SamplingTooLongResponse, CommandNotSupportedResponse,
-    DoCalibrationRequest, RunRequest, StopRequest, SensorFrameChunkResponse,
+    DoCalibrationRequest, RunRequest, StopRequest, SensorFrameChunkResponse, SetAdcGainRequest,
 )
 
 
@@ -31,6 +31,7 @@ def main() -> None:
     transport = SerialTransport(config)
     client = UartLinkClient(transport)
 
+    # Define a response handler to process incoming responses
     def on_response(resp) -> None:
         # print(f"{type(resp).__name__}: type_id=0x{resp.type_id:02X}")
         if isinstance(resp, DeviceIdResponse):
@@ -52,23 +53,40 @@ def main() -> None:
         if isinstance(resp, CommandNotSupportedResponse):
             print("Error: Command Not Supported")
 
+    # Register response handler
     client.register_response_handler(on_response)
+
+    # Open the UART link
     client.open()
 
     try:
+        # Send a Stop request avoid the device to be in running state before sending other requests
         client.send_request(StopRequest())
 
+        # Get DeviceID, FirmwareVersion and Information
         client.send_request(GetDeviceIdRequest())
         client.send_request(GetFirmwareVersionRequest())
         client.send_request(GetInformationRequest())
         time.sleep(1)
+
+        # Modify Sampling Time
+        client.send_request(SetSamplingTimeRequest(11000))
+
+        # Change ADC gain to x8
+        client.send_request(SetAdcGainRequest(0, 8))
+        client.send_request(SetAdcGainRequest(1, 8))
+
+        # Do calibration before run (optional)
         client.send_request(DoCalibrationRequest())
         time.sleep(5)
+
+        # Start running
         client.send_request(RunRequest())
         time.sleep(5)
     except KeyboardInterrupt:
         pass
     finally:
+        # Send Stop request before closing the client
         client.send_request(StopRequest())
         client.unregister_response_handler(on_response)
         client.close()
