@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Optional
 
 import serial
@@ -36,7 +37,14 @@ class SerialTransport:
     def write(self, data: bytes) -> int | None:
         if self._serial is None:
             raise TransportNotOpenError("transport is not open")
-        return self._serial.write(data)
+
+        # FIXME: Trackpad上不知道為什麼只能收到2個Bytes，先用迴圈一個個Byte送，之後再找原因
+        # return self._serial.write(data)
+
+        for b in data:
+            self._serial.write(b.to_bytes(1, byteorder="big"))
+            time.sleep(0.0001)  # 100us delay between bytes
+        return len(data)
 
     def read(self, size: int = 1) -> bytes:
         if self._serial is None:

@@ -4,19 +4,20 @@ import time
 from threading import Event, Lock, Thread
 from typing import Callable, Optional
 
-from .messages import (
-    TrackpadMessage,
-    default_trackpad_message_decoder,
+from .response import (
+    TrackpadResponse,
+    default_trackpad_response_decoder,
 )
 from .models import TrackpadPacket
 from .protocol import DefaultTrackpadProtocol, TrackpadProtocol
+from .request import TrackpadRequest, validate_trackpad_request
 from .transport import SerialTransport
 
-MessageHandler = Callable[[TrackpadMessage], None]
+ResponseHandler = Callable[[TrackpadResponse], None]
 
 
-def _decode_message(packet: TrackpadPacket) -> TrackpadMessage:
-    return default_trackpad_message_decoder(packet)
+def _decode_response(packet: TrackpadPacket) -> TrackpadResponse:
+    return default_trackpad_response_decoder(packet)
 
 
 class UartLinkClient:
@@ -28,7 +29,7 @@ class UartLinkClient:
         self._transport = transport
         self._protocol = protocol or DefaultTrackpadProtocol()
         self._rx_buffer = bytearray()
-        self._message_handlers: list[MessageHandler] = []
+        self._response_handlers: list[ResponseHandler] = []
         self._handlers_lock = Lock()
         self._stop_event = Event()
         self._rx_thread: Optional[Thread] = None
@@ -45,19 +46,25 @@ class UartLinkClient:
 
     def send(self, type_id: int, payload: bytes = b"") -> int:
         self._raise_if_worker_failed()
-        packet = TrackpadPacket(type_id=type_id, payload=payload)
+        payload_bytes = bytes(payload)
+        validate_trackpad_request(type_id, payload_bytes)
+        packet = TrackpadPacket(type_id=type_id, payload=payload_bytes)
         frame = self._protocol.encode(packet)
         return self._transport.write(frame)
 
-    def register_message_handler(self, callback: MessageHandler) -> None:
+    def send_request(self, request: TrackpadRequest) -> int:
         self._raise_if_worker_failed()
-        with self._handlers_lock:
-            self._message_handlers.append(callback)
+        return self.send(request.type_id, request.payload)
 
-    def unregister_message_handler(self, callback: MessageHandler) -> None:
+    def register_response_handler(self, callback: ResponseHandler) -> None:
         self._raise_if_worker_failed()
         with self._handlers_lock:
-            self._message_handlers = [h for h in self._message_handlers if h != callback]
+            self._response_handlers.append(callback)
+
+    def unregister_response_handler(self, callback: ResponseHandler) -> None:
+        self._raise_if_worker_failed()
+        with self._handlers_lock:
+            self._response_handlers = [h for h in self._response_handlers if h != callback]
 
     def _start_receiver_thread(self) -> None:
         if self._rx_thread is not None and self._rx_thread.is_alive():
@@ -90,11 +97,11 @@ class UartLinkClient:
 
     def _publish_packets(self, packets: list[TrackpadPacket]) -> None:
         with self._handlers_lock:
-            message_handlers_snapshot = list(self._message_handlers)
+            response_handlers_snapshot = list(self._response_handlers)
         for packet in packets:
-            message = _decode_message(packet)
-            for handler in message_handlers_snapshot:
-                handler(message)
+            response = _decode_response(packet)
+            for handler in response_handlers_snapshot:
+                handler(response)
 
     def _raise_if_worker_failed(self) -> None:
         if self._worker_exception is not None:
