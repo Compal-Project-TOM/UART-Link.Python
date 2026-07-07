@@ -82,6 +82,9 @@ If your product uses another frame format, create your own class inheriting
 
 ## Changelog
 
+### 0.3.1 (2024-07-07)
+- Fix pyproject.toml version mismatch issue
+
 ### 0.3.0 (2024-07-01)
 - Add `TrackpadRequest` for sending request messages
 - Rename `TrackpadMessage` to `TrackpadResponse` for receiving response messages
