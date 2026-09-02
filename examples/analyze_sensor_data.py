@@ -14,7 +14,7 @@ from uart_link import (
     SamplingTooLongResponse, StopRequest, DoCalibrationRequest, RunRequest, SetSamplingTimeRequest, SetAdcGainRequest,
 )
 
-sensor_count = 240
+sensor_count = 22*12
 columns = ['timestamp'] + [f'sensor_{i}' for i in range(sensor_count)]
 data_buffer = []
 adc_gain = 1
