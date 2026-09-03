@@ -42,7 +42,8 @@ class DeviceIdResponse(TrackpadResponse):
     def from_packet(cls, packet: TrackpadPacket) -> "DeviceIdResponse":
         if len(packet.payload) != 16:
             raise ValueError("device id payload must be 16 bytes")
-        return cls(packet=packet, device_id=packet.payload.hex())
+        device_id = packet.payload.split(b"\x00", 1)[0].decode("ascii", errors="ignore")
+        return cls(packet=packet, device_id=device_id)
 
 
 @dataclass(slots=True)
@@ -70,7 +71,8 @@ class FirmwareVersionResponse(TrackpadResponse):
     def from_packet(cls, packet: TrackpadPacket) -> "FirmwareVersionResponse":
         if len(packet.payload) != 128:
             raise ValueError("firmware version payload must be 128 bytes")
-        return cls(packet=packet, firmware_version=packet.payload.hex())
+        firmware_version = packet.payload.split(b"\x00", 1)[0].decode("ascii", errors="ignore")
+        return cls(packet=packet, firmware_version=firmware_version)
 
 
 @dataclass(slots=True)

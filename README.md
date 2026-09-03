@@ -82,6 +82,10 @@ If your product uses another frame format, create your own class inheriting
 
 ## Changelog
 
+### 0.3.2 (2026-09-03)
+- Fix `DeviceIdResponse` payload decoding issue
+- Fix `FirmwareVersionResponse` payload decoding issue
+
 ### 0.3.1 (2024-07-07)
 - Fix pyproject.toml version mismatch issue
 
