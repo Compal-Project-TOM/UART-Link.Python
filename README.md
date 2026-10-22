@@ -63,6 +63,18 @@ finally:
 
 `open()` will start an internal background receive thread automatically.
 
+### Device log text
+
+Bytes that arrive outside of a packet (for example firmware log strings) are no longer dropped.
+They are split into lines and delivered to text handlers:
+
+```python
+client.register_text_handler(lambda line: print("device:", line))
+```
+
+Handlers run on the receive thread. A trailing partial line is flushed after about 100 ms
+of silence, and lines that are mostly non-printable bytes are discarded as noise.
+
 ## Example
 
 Run:
@@ -81,6 +93,10 @@ If your product uses another frame format, create your own class inheriting
 `TrackpadProtocol` and inject it into `UartLinkClient`.
 
 ## Changelog
+
+### 0.4.0
+- Add `register_text_handler` / `unregister_text_handler` to receive non-packet device log text
+- Fix packets being lost when the magic bytes were split across two reads
 
 ### 0.3.2 (2026-09-03)
 - Fix `DeviceIdResponse` payload decoding issue

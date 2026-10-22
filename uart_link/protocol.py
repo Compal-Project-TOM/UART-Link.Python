@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable
+from typing import Callable, Iterable, Optional
 
 from .models import TrackpadPacket
 
 
 class TrackpadProtocol(ABC):
+    # 解碼時被丟掉、不屬於任何封包的位元組（例如裝置的 log 文字）會交給這個 callback。
+    on_discard: Optional[Callable[[bytes], None]] = None
+
     @abstractmethod
     def encode(self, packet: TrackpadPacket) -> bytes:
         raise NotImplementedError
@@ -42,11 +45,13 @@ class DefaultTrackpadProtocol(TrackpadProtocol):
         while True:
             magic_index = buffer.find(self.MAGIC)
             if magic_index < 0:
-                buffer.clear()
+                # 尾端若是 magic 的第一個 byte，可能只是 magic 被切在兩次 read 之間，先留著。
+                keep = 1 if buffer.endswith(self.MAGIC[:1]) else 0
+                self._discard(buffer, len(buffer) - keep)
                 return packets
 
             if magic_index > 0:
-                del buffer[:magic_index]
+                self._discard(buffer, magic_index)
 
             if len(buffer) < self.HEADER_SIZE:
                 return packets
@@ -64,3 +69,11 @@ class DefaultTrackpadProtocol(TrackpadProtocol):
                 )
             )
             del buffer[:frame_size]
+
+    def _discard(self, buffer: bytearray, count: int) -> None:
+        if count <= 0:
+            return
+        data = bytes(buffer[:count])
+        del buffer[:count]
+        if self.on_discard is not None:
+            self.on_discard(data)
