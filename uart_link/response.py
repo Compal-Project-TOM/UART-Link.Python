@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import struct
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, ClassVar
 
 from .models import TrackpadPacket
-from .type_ids import TrackpadResponseTypeId
+from .type_ids import ReportMode, TrackpadResponseTypeId
 
 
 @dataclass(slots=True)
@@ -200,6 +201,117 @@ class CommandNotSupportedResponse(TrackpadResponse):
         return cls(packet=packet)
 
 
+@dataclass(slots=True)
+class ReportModeResponse(TrackpadResponse):
+    """
+    Report mode response: which data the device reports while running
+    """
+    mode: ReportMode
+
+    @classmethod
+    def from_packet(cls, packet: TrackpadPacket) -> "ReportModeResponse":
+        if len(packet.payload) != 1:
+            raise ValueError("report mode payload must be 1 byte")
+        return cls(packet=packet, mode=ReportMode(packet.payload[0]))
+
+
+@dataclass(slots=True, frozen=True)
+class AiTouchFinger:
+    """
+    One finger entry in AI Touch Result (7 bytes)
+    """
+    contact_id: int
+    state: int
+    x: int
+    """X in 0.01 mm"""
+    y: int
+    """Y in 0.01 mm"""
+    confidence: int
+    """0 ~ 255, maps to 0.0 ~ 1.0"""
+
+    SIZE: ClassVar[int] = 7
+
+    @property
+    def active(self) -> bool:
+        return bool(self.state & 0x01)
+
+    @property
+    def just_lifted(self) -> bool:
+        return bool(self.state & 0x02)
+
+    @property
+    def x_mm(self) -> float:
+        return self.x / 100
+
+    @property
+    def y_mm(self) -> float:
+        return self.y / 100
+
+    @property
+    def confidence_ratio(self) -> float:
+        return self.confidence / 255
+
+
+@dataclass(slots=True)
+class AiTouchResultResponse(TrackpadResponse):
+    """
+    AI touch result response, sent after each AI inference
+    """
+    frame_index: int
+    flags: int
+    fingers: tuple[AiTouchFinger, ...]
+
+    HEADER_SIZE: ClassVar[int] = 6
+
+    @property
+    def baseline_ready(self) -> bool:
+        return bool(self.flags & 0x01)
+
+    @classmethod
+    def from_packet(cls, packet: TrackpadPacket) -> "AiTouchResultResponse":
+        payload = packet.payload
+        if len(payload) < cls.HEADER_SIZE:
+            raise ValueError(f"AI touch result payload must be at least {cls.HEADER_SIZE} bytes")
+        frame_index, flags, finger_count = struct.unpack_from(">IBB", payload, 0)
+        expected = cls.HEADER_SIZE + finger_count * AiTouchFinger.SIZE
+        if len(payload) != expected:
+            raise ValueError(
+                f"AI touch result with {finger_count} fingers must be {expected} bytes, "
+                f"got {len(payload)} bytes"
+            )
+        fingers = tuple(
+            AiTouchFinger(*struct.unpack_from(">BBHHB", payload, cls.HEADER_SIZE + i * AiTouchFinger.SIZE))
+            for i in range(finger_count)
+        )
+        return cls(packet=packet, frame_index=frame_index, flags=flags, fingers=fingers)
+
+
+@dataclass(slots=True)
+class AiInferenceTimeResponse(TrackpadResponse):
+    """
+    AI inference time response, all times in us
+    """
+    frame_index: int
+    total_us: int
+    model_us: int
+    pre_us: int
+    post_us: int
+
+    @classmethod
+    def from_packet(cls, packet: TrackpadPacket) -> "AiInferenceTimeResponse":
+        if len(packet.payload) != 20:
+            raise ValueError("AI inference time payload must be 20 bytes")
+        frame_index, total_us, model_us, pre_us, post_us = struct.unpack(">5I", packet.payload)
+        return cls(
+            packet=packet,
+            frame_index=frame_index,
+            total_us=total_us,
+            model_us=model_us,
+            pre_us=pre_us,
+            post_us=post_us,
+        )
+
+
 def default_trackpad_response_decoder(packet: TrackpadPacket) -> TrackpadResponse:
     decoder = _DEFAULT_RESPONSE_DECODERS.get(packet.type_id)
     if decoder is None:
@@ -228,7 +340,10 @@ _DEFAULT_RESPONSE_DECODERS: dict[int, TrackpadResponseDecoder] = {
     int(TrackpadResponseTypeId.AUTO_GAIN_ATTACK_THD): AutoGainAttackThresholdResponse.from_packet,
     int(TrackpadResponseTypeId.AUTO_GAIN_RELEASE_THD): AutoGainReleaseThresholdResponse.from_packet,
     int(TrackpadResponseTypeId.AUTO_GAIN_RELEASE_DELAY_FRAMES): AutoGainReleaseDelayFramesResponse.from_packet,
+    int(TrackpadResponseTypeId.REPORT_MODE): ReportModeResponse.from_packet,
     int(TrackpadResponseTypeId.SENSOR_FRAME_CHUNK): SensorFrameChunkResponse.from_packet,
+    int(TrackpadResponseTypeId.AI_TOUCH_RESULT): AiTouchResultResponse.from_packet,
     int(TrackpadResponseTypeId.SAMPLING_TOO_LONG): SamplingTooLongResponse.from_packet,
     int(TrackpadResponseTypeId.COMMAND_NOT_SUPPORTED): CommandNotSupportedResponse.from_packet,
+    int(TrackpadResponseTypeId.AI_INFERENCE_TIME): AiInferenceTimeResponse.from_packet,
 }

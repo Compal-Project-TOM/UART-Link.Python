@@ -94,6 +94,12 @@ If your product uses another frame format, create your own class inheriting
 
 ## Changelog
 
+### 0.5.0
+- Follow protocol spec 0.5.0
+- Add `SetReportModeRequest` (0x12) and `ReportModeResponse` (0xA5) with `ReportMode` flags
+- Add `AiTouchResultResponse` (0xB1) for AI touch coordinates, with `AiTouchFinger` entries
+- Add `GetAiInferenceTimeRequest` (0x72) and `AiInferenceTimeResponse` (0xF2)
+
 ### 0.4.0
 - Add `register_text_handler` / `unregister_text_handler` to receive non-packet device log text
 - Fix packets being lost when the magic bytes were split across two reads

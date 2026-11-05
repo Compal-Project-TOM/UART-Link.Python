@@ -5,12 +5,16 @@ from .config import UartConfig
 from .exceptions import ChecksumError, ProtocolError, TransportNotOpenError, UartLinkError
 from .response import (
     AdcGainResponse,
+    AiInferenceTimeResponse,
+    AiTouchFinger,
+    AiTouchResultResponse,
     AutoGainAttackThresholdResponse,
     AutoGainReleaseDelayFramesResponse,
     AutoGainReleaseThresholdResponse,
     CalibrationDataResponse,
     DeviceIdResponse,
     EffectiveActiveAreasResponse,
+    ReportModeResponse,
     SamplingTimeResponse,
     SamplingTooLongResponse,
     SensorFrameChunkResponse,
@@ -23,19 +27,21 @@ from .models import TrackpadPacket
 from .protocol import DefaultTrackpadProtocol, TrackpadProtocol
 from .request import (
     DoCalibrationRequest,
+    GetAiInferenceTimeRequest,
     GetDeviceIdRequest,
     GetFirmwareVersionRequest,
     GetInformationRequest,
     RunRequest,
     SetAdcGainRequest,
+    SetReportModeRequest,
     SetSamplingTimeRequest,
     StopRequest,
     TrackpadRequest,
 )
 from .transport import SerialTransport
-from .type_ids import TrackpadRequestTypeId, TrackpadResponseTypeId
+from .type_ids import ReportMode, TrackpadRequestTypeId, TrackpadResponseTypeId
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "UartLinkClient",
@@ -51,9 +57,11 @@ __all__ = [
     "GetFirmwareVersionRequest",
     "SetSamplingTimeRequest",
     "SetAdcGainRequest",
+    "SetReportModeRequest",
     "DoCalibrationRequest",
     "RunRequest",
     "StopRequest",
+    "GetAiInferenceTimeRequest",
     "TrackpadResponse",
     "UnknownTrackpadResponse",
     "DeviceIdResponse",
@@ -65,9 +73,14 @@ __all__ = [
     "AutoGainAttackThresholdResponse",
     "AutoGainReleaseThresholdResponse",
     "AutoGainReleaseDelayFramesResponse",
+    "ReportModeResponse",
     "SensorFrameChunkResponse",
+    "AiTouchFinger",
+    "AiTouchResultResponse",
+    "AiInferenceTimeResponse",
     "TrackpadResponseTypeId",
     "TrackpadRequestTypeId",
+    "ReportMode",
     "FirmwareVersionResponse",
     "CommandNotSupportedResponse",
     "UartLinkError",

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .models import TrackpadPacket
-from .type_ids import TrackpadRequestTypeId
+from .type_ids import ReportMode, TrackpadRequestTypeId
 
 REQUEST_PAYLOAD_LENGTHS: dict[int, int] = {
     int(TrackpadRequestTypeId.GET_DEVICE_ID): 0,
@@ -11,9 +11,11 @@ REQUEST_PAYLOAD_LENGTHS: dict[int, int] = {
     int(TrackpadRequestTypeId.GET_FIRMWARE_VERSION): 0,
     int(TrackpadRequestTypeId.SET_SAMPLING_TIME): 4,
     int(TrackpadRequestTypeId.SET_ADC_GAIN): 3,
+    int(TrackpadRequestTypeId.SET_REPORT_MODE): 1,
     int(TrackpadRequestTypeId.DO_CALIBRATION): 0,
     int(TrackpadRequestTypeId.RUN): 0,
     int(TrackpadRequestTypeId.STOP): 0,
+    int(TrackpadRequestTypeId.GET_AI_INFERENCE_TIME): 0,
 }
 
 
@@ -80,6 +82,19 @@ class SetAdcGainRequest(TrackpadRequest):
         )
 
 
+class SetReportModeRequest(TrackpadRequest):
+    """選擇 Run 時要回報哪些資料，例如 ReportMode.SENSOR_FRAME_CHUNK | ReportMode.AI_TOUCH_RESULT。"""
+
+    def __init__(self, mode: ReportMode | int) -> None:
+        mode_value = int(mode)
+        if not (0 <= mode_value <= 0xFF):
+            raise ValueError(f"mode must be in range [0, 255], got {mode_value}")
+        super().__init__(
+            type_id=int(TrackpadRequestTypeId.SET_REPORT_MODE),
+            payload=mode_value.to_bytes(1, "big"),
+        )
+
+
 class DoCalibrationRequest(TrackpadRequest):
     def __init__(self) -> None:
         super().__init__(type_id=int(TrackpadRequestTypeId.DO_CALIBRATION))
@@ -93,3 +108,8 @@ class RunRequest(TrackpadRequest):
 class StopRequest(TrackpadRequest):
     def __init__(self) -> None:
         super().__init__(type_id=int(TrackpadRequestTypeId.STOP))
+
+
+class GetAiInferenceTimeRequest(TrackpadRequest):
+    def __init__(self) -> None:
+        super().__init__(type_id=int(TrackpadRequestTypeId.GET_AI_INFERENCE_TIME))
