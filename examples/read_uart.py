@@ -11,7 +11,7 @@ from uart_link import (
     CalibrationDataResponse,
     SamplingTimeResponse,
     SamplingTooLongResponse,
-    AdcGainResponse, SetAdcGainRequest, DoCalibrationRequest
+    AdcGainResponse, SetAdcGainRequest, DoCalibrationRequest, AdcGain
 )
 
 
@@ -46,14 +46,14 @@ def main() -> None:
         if isinstance(resp, SamplingTooLongResponse):
             print("Warning: Sampling Too Long")
         if isinstance(resp, AdcGainResponse):
-            print("adc", resp.adc, "gain:", resp.gain)
+            print("adc", resp.adc, "gain:", f"x{resp.gain_multiplier}")
 
     client.register_response_handler(on_response)
     client.open()
     print(f"Listening on {args.port} @ {args.baudrate}. Press Ctrl+C to stop.")
 
     try:
-        adc_gain = 8
+        adc_gain = AdcGain.GAIN_8
         client.send_request(SetAdcGainRequest(0, adc_gain))
         client.send_request(SetAdcGainRequest(1, adc_gain))
 

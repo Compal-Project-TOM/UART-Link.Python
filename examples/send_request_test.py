@@ -11,7 +11,7 @@ from uart_link import (
     SamplingTimeResponse,
     GetDeviceIdRequest, GetFirmwareVersionRequest, GetInformationRequest, SetSamplingTimeRequest,
     FirmwareVersionResponse, AdcGainResponse, SamplingTooLongResponse, CommandNotSupportedResponse,
-    DoCalibrationRequest, RunRequest, StopRequest, SensorFrameChunkResponse, SetAdcGainRequest,
+    DoCalibrationRequest, RunRequest, StopRequest, SensorFrameChunkResponse, SetAdcGainRequest, AdcGain,
 )
 
 
@@ -47,7 +47,7 @@ def main() -> None:
         if isinstance(resp, SensorFrameChunkResponse):
             print("sensor_data:", resp.sensor_values)
         if isinstance(resp, AdcGainResponse):
-            print("adc:", resp.adc, "gain:", resp.gain)
+            print("adc:", resp.adc, "gain:", f"x{resp.gain_multiplier}")
         if isinstance(resp, SamplingTooLongResponse):
             print("Warning: Sampling Too Long")
         if isinstance(resp, CommandNotSupportedResponse):
@@ -73,8 +73,8 @@ def main() -> None:
         client.send_request(SetSamplingTimeRequest(11000))
 
         # Change ADC gain to x8
-        client.send_request(SetAdcGainRequest(0, 8))
-        client.send_request(SetAdcGainRequest(1, 8))
+        client.send_request(SetAdcGainRequest(0, AdcGain.GAIN_8))
+        client.send_request(SetAdcGainRequest(1, AdcGain.GAIN_8))
 
         # Do calibration before run (optional)
         client.send_request(DoCalibrationRequest())

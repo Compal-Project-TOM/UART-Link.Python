@@ -11,13 +11,13 @@ from uart_link import (
     SerialTransport,
     CalibrationDataResponse,
     SamplingTimeResponse,
-    SamplingTooLongResponse, StopRequest, DoCalibrationRequest, RunRequest, SetSamplingTimeRequest, SetAdcGainRequest,
+    SamplingTooLongResponse, StopRequest, DoCalibrationRequest, RunRequest, SetSamplingTimeRequest, SetAdcGainRequest, AdcGain,
 )
 
 sensor_count = 22*12
 columns = ['timestamp'] + [f'sensor_{i}' for i in range(sensor_count)]
 data_buffer = []
-adc_gain = 1
+adc_gain = AdcGain.GAIN_1
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -42,7 +42,7 @@ def draw_figures(df: pd.DataFrame, fps, vpp) -> None:
 
     max_sensor = vpp.idxmax()
     min_sensor = vpp.idxmin()
-    plt.title(f"[Gain x{adc_gain}]    "
+    plt.title(f"[Gain x{adc_gain.multiplier}]    "
               f"FPS: {fps.mean()} (mean) / {fps.max()} (max) / {fps.min()} (min)    "
               f"Vp-p: {vpp[max_sensor]} mv (max, at {max_sensor}) / {vpp[min_sensor]} mv (min, at {min_sensor})")
     plt.xlabel("Time")

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .models import TrackpadPacket
-from .type_ids import ReportMode, TrackpadRequestTypeId
+from .type_ids import AdcGain, ReportMode, TrackpadRequestTypeId
 
 REQUEST_PAYLOAD_LENGTHS: dict[int, int] = {
     int(TrackpadRequestTypeId.GET_DEVICE_ID): 0,
@@ -71,14 +71,22 @@ class SetSamplingTimeRequest(TrackpadRequest):
 
 
 class SetAdcGainRequest(TrackpadRequest):
-    def __init__(self, adc: int, gain: int) -> None:
+    """設定 ADC 增益，gain 只能是 AdcGain 代碼 (GAIN_1 = 0b000 ~ GAIN_128 = 0b111)。"""
+
+    def __init__(self, adc: int, gain: AdcGain | int) -> None:
         if not (0 <= adc <= 0xFF):
             raise ValueError(f"adc must be in range [0, 255], got {adc}")
-        if not (0 <= gain <= 0xFFFF):
-            raise ValueError(f"gain must be in range [0, 65535], got {gain}")
+        if type(gain) is not AdcGain and type(gain) is not int:
+            raise ValueError(f"gain must be an AdcGain code, got {gain!r}")
+        try:
+            code = AdcGain(gain)
+        except ValueError:
+            raise ValueError(
+                f"gain must be an AdcGain code in range [0, 7], got {gain!r}"
+            ) from None
         super().__init__(
             type_id=int(TrackpadRequestTypeId.SET_ADC_GAIN),
-            payload=adc.to_bytes(1, "big") + gain.to_bytes(2, "big"),
+            payload=adc.to_bytes(1, "big") + int(code).to_bytes(2, "big"),
         )
 
 

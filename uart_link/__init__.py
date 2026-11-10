@@ -39,7 +39,7 @@ from .request import (
     TrackpadRequest,
 )
 from .transport import SerialTransport
-from .type_ids import ReportMode, TrackpadRequestTypeId, TrackpadResponseTypeId
+from .type_ids import AdcGain, ReportMode, TrackpadRequestTypeId, TrackpadResponseTypeId
 
 __version__ = "0.5.0"
 
@@ -57,6 +57,7 @@ __all__ = [
     "GetFirmwareVersionRequest",
     "SetSamplingTimeRequest",
     "SetAdcGainRequest",
+    "AdcGain",
     "SetReportModeRequest",
     "DoCalibrationRequest",
     "RunRequest",

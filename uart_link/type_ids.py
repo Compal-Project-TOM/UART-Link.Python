@@ -90,3 +90,21 @@ class ReportMode(IntFlag):
 
     AI_TOUCH_RESULT = 0x02
     """Report AI Touch Result (0xB1) while running"""
+
+
+class AdcGain(IntEnum):
+    """ADC gain code for Set ADC Gain (0x11), same as firmware adc_gain_num."""
+
+    GAIN_1 = 0b000
+    GAIN_2 = 0b001
+    GAIN_4 = 0b010
+    GAIN_8 = 0b011
+    GAIN_16 = 0b100
+    GAIN_32 = 0b101
+    GAIN_64 = 0b110
+    GAIN_128 = 0b111
+
+    @property
+    def multiplier(self) -> int:
+        """Actual gain value, e.g. GAIN_8 -> 8"""
+        return 1 << self.value

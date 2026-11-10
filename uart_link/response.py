@@ -97,6 +97,12 @@ class AdcGainResponse(TrackpadResponse):
     """
     adc: int
     gain: int
+    """AdcGain code (0b000 ~ 0b111)"""
+
+    @property
+    def gain_multiplier(self) -> int:
+        """Actual gain value, e.g. code 0b011 -> 8"""
+        return 1 << self.gain
 
     @classmethod
     def from_packet(cls, packet: TrackpadPacket) -> "AdcGainResponse":
