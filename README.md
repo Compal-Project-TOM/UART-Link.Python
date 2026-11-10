@@ -94,6 +94,11 @@ If your product uses another frame format, create your own class inheriting
 
 ## Changelog
 
+### 0.5.1
+- Add `AdcGain` enum (`GAIN_1` = 0b000 ~ `GAIN_128` = 0b111) matching the firmware `adc_gain_num` codes
+- `SetAdcGainRequest` now only accepts `AdcGain` codes 0-7; other values raise `ValueError` (breaking: passing a multiplier such as 8 for x8 is rejected)
+- Add `AdcGain.multiplier` and `AdcGainResponse.gain_multiplier` to get the actual gain value
+
 ### 0.5.0
 - Follow protocol spec 0.5.0
 - Add `SetReportModeRequest` (0x12) and `ReportModeResponse` (0xA5) with `ReportMode` flags

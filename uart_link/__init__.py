@@ -41,7 +41,7 @@ from .request import (
 from .transport import SerialTransport
 from .type_ids import AdcGain, ReportMode, TrackpadRequestTypeId, TrackpadResponseTypeId
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 __all__ = [
     "UartLinkClient",
